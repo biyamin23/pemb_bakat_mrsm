@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Dashboard Pembangunan Bakat Kokurikulum MRSM Kuching</title>
+  <meta name="description" content="Sistem Pengurusan Kokurikulum, Pelaporan Aktiviti, Ujian SKP, dan Pemantauan Bakat Maktab Rendah Sains MARA Kuching">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/clay-theme.css?v=4">
+</head>
+<body>
+
+  <!-- Quick Persona Switcher Bar (MRSM Kuching Multi-Role Testing Tool) -->
+  <header class="quick-role-bar">
+    <div class="quick-role-left">
+      <div class="mobile-nav-toggle-box">
+        <button id="btnMobileMenuToggle" class="btn-mobile-menu" onclick="toggleMobileSidebar()" aria-label="Buka Menu">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+      </div>
+      <div class="quick-role-info">
+        <span class="badge-active-user">🇲🇾 MRSM KUCHING</span>
+        <span id="activeUserDisplay">Memuatkan pengguna...</span>
+      </div>
+    </div>
+    <div class="quick-role-actions">
+      <label for="quickUserSelect" style="font-size: 0.75rem; color: #94a3b8; font-weight: 700;">Demo:</label>
+      <select id="quickUserSelect" class="quick-role-select" aria-label="Tukar Pengguna Demo">
+        <option value="usr_1021">Cikgu Azman (G1021) - Uniform + Kelab + SKP</option>
+        <option value="usr_1045">Ustazah Nurul Ain (G1045) - Uniform + Kelab</option>
+        <option value="usr_1078">Cikgu Mohd Farhan (G1078) - Uniform + Sukan</option>
+        <option value="usr_1005">Cikgu Kamaruddin (G1005) - Ketua Penyelaras</option>
+        <option value="usr_1002">McManus Sing (G1002) - TPPB (Pengesah)</option>
+        <option value="usr_1099">Cikgu Siti Sarah (G1099) - Pengakap + Seni + SKP</option>
+        <option value="usr_admin">Pentadbir Kokurikulum (ADMIN)</option>
+      </select>
+      <button id="btnDbStatus" class="btn-db-status disconnected" onclick="openDatabaseSetupModal()" title="Konfigurasi Database Google Sheets">🔌 Setup DB</button>
+      <button id="btnAuthSwitch" class="btn-auth-switch">Log Masuk</button>
+    </div>
+  </header>
+
+  <!-- Mobile Sidebar Backdrop -->
+  <div id="sidebarBackdrop" class="sidebar-backdrop" onclick="closeMobileSidebar()"></div>
+
+  <!-- App Main Container -->
+  <div class="app-container">
+    <!-- Clay Sidebar -->
+    <aside class="clay-sidebar" id="claySidebar">
+      <div class="sidebar-brand">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="brand-icon-clay">🎨</div>
+          <div class="brand-text">
+            <h2>MRSM KUCHING</h2>
+            <span>PEMBANGUNAN BAKAT</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close-sidebar-mobile" onclick="closeMobileSidebar()" aria-label="Tutup Menu">&times;</button>
+      </div>
+
+      <!-- Active User Profile Card -->
+      <div id="sidebarUserCard" class="sidebar-user-card">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="sidebar-nav">
+        <div class="nav-category-title">Menu Utama</div>
+        <button class="clay-nav-btn active" data-tab="dashboard">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Dashboard & Analisis
+        </button>
+
+        <button class="clay-nav-btn" data-tab="pelaporan">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Pelaporan Kokurikulum
+          <span id="pelaporanBadgeCount" class="clay-nav-badge" style="display: none;">0</span>
+        </button>
+
+        <button class="clay-nav-btn" data-tab="maklumat">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          Maklumat Umum
+        </button>
+
+        <button class="clay-nav-btn" data-tab="rpt">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          Rancangan Tahunan (RPT)
+        </button>
+
+        <button class="clay-nav-btn" data-tab="borang">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          Muat Turun Borang
+        </button>
+
+        <div class="nav-category-title" id="adminNavHeader">Pentadbiran</div>
+        <button id="navAdminBtn" class="clay-nav-btn" data-tab="admin" style="display: none;">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+          Pengurusan Admin
+        </button>
+      </nav>
+
+      <!-- Bottom System Info -->
+      <div style="font-size: 0.725rem; color: var(--text-light); text-align: center; border-top: 1px solid rgba(255,255,255,0.7); padding-top: 12px;">
+        MRSM Talent Development v2.0<br>Claymorphism UI Engine
+      </div>
+    </aside>
+
+    <!-- Main Content Body -->
+    <main class="main-wrapper">
+      <div id="mainContentBody">
+        <!-- Dynamically rendered by app.js -->
+      </div>
+    </main>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 1: CIPTA PELAPORAN BARU (Mingguan, SKP, Program/Pertandingan)
+       ===================================================================== -->
+  <div id="modalCreateReport" class="modal-overlay">
+    <div class="modal-clay-content">
+      <div class="modal-header">
+        <div>
+          <h2>📝 Cipta Pelaporan Kokurikulum Baru</h2>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">MRSM Kuching &bull; Penjanaan Pelaporan Berdasarkan Data Guru Penasihat</p>
+        </div>
+        <button class="btn-close-modal" onclick="closeCreateReportModal()">&times;</button>
+      </div>
+
+      <form id="formNewReport" onsubmit="saveNewReport(event)">
+        <!-- STEP 1: PILIH TANGGUNGJAWAB PENASIHAT GURU (AUTO-FILTERED BASED ON CURRENT USER) -->
+        <div style="background: linear-gradient(135deg, #eef2ff, #f8fafc); border: 2px solid #a5b4fc; border-radius: var(--radius-lg); padding: 18px; margin-bottom: 20px; box-shadow: var(--clay-shadow-pill);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div>
+              <label style="font-size: 0.95rem; font-weight: 800; color: #1e1b4b; display: flex; align-items: center; gap: 8px;">
+                🎯 1. Pilih Tanggungjawab Penasihat Anda (MRSM Kuching) *
+              </label>
+              <p style="font-size: 0.775rem; color: #4338ca; margin-top: 2px;">
+                Sistem mengesan unit yang anda bimbing. Sila pilih unit untuk auto-fill data pelaporan:
+              </p>
+            </div>
+            <span id="badgeAutoFillStatus" class="badge-status approved" style="font-size: 0.7rem;">✨ Auto-Fill Aktif</span>
+          </div>
+
+          <!-- Interactive Quick Pills for Teacher's Units -->
+          <div id="teacherAdvisoryPills" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;"></div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <select id="formUnitSelect" class="clay-select" style="background: #ffffff; font-weight: 700; border: 1.5px solid #6366f1;" onchange="handleTeacherUnitSelectChange(this.value)" required>
+              <!-- Options populated dynamically with teacher's assigned units -->
+            </select>
+          </div>
+        </div>
+
+        <!-- AUTO-FILLED DATA FIELDS -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="formKategoriUnit">Kategori Kokurikulum (Auto-Fill)</label>
+            <input type="text" id="formKategoriUnit" class="clay-input" readonly style="background: #e2e8f0; font-weight: 800; color: #1e293b;">
+          </div>
+
+          <div class="form-group">
+            <label for="formJenisLaporan">Jenis Pelaporan (Auto-Padanan) *</label>
+            <select id="formJenisLaporan" class="clay-select" required>
+              <option value="mingguan">Pertemuan Mingguan Kokurikulum</option>
+              <option value="skp">Pelaporan SKP (Standard Kemahiran Pelajar)</option>
+              <option value="program">Program / Kejohanan / Pertandingan</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="formTarikh">Tarikh Aktiviti *</label>
+            <input type="date" id="formTarikh" class="clay-input" required>
+          </div>
+
+          <div class="form-group">
+            <label for="formBilPertemuan">Bil. Pertemuan / Sesi *</label>
+            <input type="text" id="formBilPertemuan" class="clay-input" placeholder="Cth: 3 atau SKP-1" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="formMasaMula">Masa Mula *</label>
+            <input type="time" id="formMasaMula" class="clay-input" value="15:00" required>
+          </div>
+
+          <div class="form-group">
+            <label for="formMasaTamat">Masa Tamat *</label>
+            <input type="time" id="formMasaTamat" class="clay-input" value="17:00" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="formKehadiranHadir">Bilangan Ahli Hadir *</label>
+            <input type="number" id="formKehadiranHadir" class="clay-input" value="44" min="1" required>
+          </div>
+
+          <div class="form-group">
+            <label for="formKehadiranTotal">Jumlah Keseluruhan Ahli (Auto-Fill) *</label>
+            <input type="number" id="formKehadiranTotal" class="clay-input" value="48" min="1" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="formObjektif">Objektif Aktiviti / Standard Kemahiran *</label>
+          <input type="text" id="formObjektif" class="clay-input" placeholder="Nyatakan fokus kemahiran atau objektif pertemuan" required>
+        </div>
+
+        <div class="form-group">
+          <label for="formAktiviti">Ringkasan Aktiviti / Pengisian *</label>
+          <textarea id="formAktiviti" class="clay-textarea" rows="3" placeholder="Huraikan langkah pelaksanaan aktiviti, modul atau keputusan pertandingan..." required></textarea>
+        </div>
+
+        <!-- Multi-image Upload Zone -->
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label>Dokumentasi Gambar Aktiviti (2 hingga 4 Keping)</label>
+            <button type="button" id="btnSampleImages" class="btn-clay btn-clay-sm btn-clay-secondary" style="font-size: 0.725rem;">
+              📸 Gunakan Gambar Contoh
+            </button>
+          </div>
+
+          <div id="reportImageDropzone" class="image-upload-dropzone">
+            <p style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">
+              Klik atau Seret Gambar ke Sini
+            </p>
+            <p style="font-size: 0.75rem; color: var(--text-muted);">Format JPG, PNG atau WebP (Disimpan terus dalam pelayar)</p>
+            <input type="file" id="reportFileInput" accept="image/*" multiple style="display: none;">
+          </div>
+
+          <!-- Preview Grid -->
+          <div id="previewGrid" class="preview-grid"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="formDisediakanOleh">Disediakan Oleh (Auto-fetch profil guru semasa):</label>
+          <input type="text" id="formDisediakanOleh" class="clay-input" readonly style="background: #e2e8f0; font-weight: 700;">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+          <button type="button" class="btn-clay btn-clay-secondary" onclick="closeCreateReportModal()">Batal</button>
+          <button type="submit" class="btn-clay btn-clay-primary">Hantar Laporan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 2: PRINT PREVIEW RASMI (Official MRSM Letterhead)
+       ===================================================================== -->
+  <div id="modalPrintPreview" class="modal-overlay">
+    <div class="modal-clay-content" style="max-width: 820px;">
+      <div class="modal-header no-print">
+        <h2>🖨️ Format Cetakan Rasmi Laporan Kokurikulum MRSM</h2>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-clay btn-clay-primary btn-clay-sm" onclick="triggerPrint()">Cetak Sekarang (Ctrl+P)</button>
+          <button class="btn-close-modal" onclick="closePrintPreviewModal()">&times;</button>
+        </div>
+      </div>
+
+      <div id="printPreviewContent">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 3: LOGIN RASMI (Guru: No. Gaji | Admin: Passcode)
+       ===================================================================== -->
+  <div id="modalAuth" class="modal-overlay">
+    <div class="modal-clay-content" style="max-width: 480px;">
+      <div class="modal-header">
+        <h2>🔐 Log Masuk Sistem</h2>
+        <button class="btn-close-modal" onclick="closeLoginModal()">&times;</button>
+      </div>
+
+      <div class="clay-tabs" style="margin-bottom: 20px; width: 100%;">
+        <button type="button" id="tabLoginGuru" class="clay-tab-item active" style="flex: 1; text-align: center;" onclick="switchAuthTab('guru')">
+          👨‍🏫 Guru / Penyemak / TPPB
+        </button>
+        <button type="button" id="tabLoginAdmin" class="clay-tab-item" style="flex: 1; text-align: center;" onclick="switchAuthTab('admin')">
+          🛡️ Pentadbir (Admin)
+        </button>
+      </div>
+
+      <!-- Form Login Guru (Nombor Gaji Sahaja) -->
+      <form id="formLoginGuru" onsubmit="submitGuruLogin(event)">
+        <p style="font-size: 0.825rem; color: var(--text-muted); margin-bottom: 14px;">
+          Guru Penasihat, Penyelaras dan TPPB hanya perlu memasukkan <strong>Nombor Gaji Guru</strong>.
+        </p>
+
+        <div class="form-group">
+          <label for="loginNoGaji">Nombor Gaji Guru *</label>
+          <input type="text" id="loginNoGaji" class="clay-input" placeholder="Cth: G1021, G1002, G1005" required>
+        </div>
+
+        <div style="background: var(--bg-surface); padding: 10px 14px; border-radius: var(--radius-sm); font-size: 0.775rem; color: var(--text-muted); margin-bottom: 16px;">
+          💡 <em>Contoh No. Gaji Demo (MRSM Kuching):</em><br>
+          &bull; <strong>G1021</strong>: Cikgu Azman (Penasihat: Uniform KRS + Kelab Robotik + SKP)<br>
+          &bull; <strong>G1045</strong>: Ustazah Nurul Ain (Penasihat: Uniform Pandu Puteri + Kelab Debat)<br>
+          &bull; <strong>G1078</strong>: Cikgu Mohd Farhan (Penasihat: Uniform Polis + Kelab Bola Sepak)<br>
+          &bull; <strong>G1005</strong>: Cikgu Kamaruddin (Ketua Penyelaras Kokurikulum)<br>
+          &bull; <strong>G1002</strong>: McManus Sing (Timbalan Pengetua Pembangunan Bakat - TPPB)
+        </div>
+
+        <button type="submit" class="btn-clay btn-clay-primary" style="width: 100%;">Masuk Sistem</button>
+      </form>
+
+      <!-- Form Login Admin (Passcode Sahaja) -->
+      <form id="formLoginAdmin" onsubmit="submitAdminLogin(event)" style="display: none;">
+        <p style="font-size: 0.825rem; color: var(--text-muted); margin-bottom: 14px;">
+          Akses pengurusan induk sistem memerlukan <strong>Kod Passcode Pentadbir</strong>.
+        </p>
+
+        <div class="form-group">
+          <label for="loginPasscode">Passcode Pentadbir *</label>
+          <input type="password" id="loginPasscode" class="clay-input" placeholder="Masukkan kod rahsia admin" required>
+        </div>
+
+        <div style="background: var(--bg-surface); padding: 8px 12px; border-radius: var(--radius-sm); font-size: 0.775rem; color: var(--text-muted); margin-bottom: 16px;">
+          🔑 <em>Passcode lalai demo:</em> <strong>admin123</strong>
+        </div>
+
+        <button type="submit" class="btn-clay btn-clay-orange" style="width: 100%;">Masuk Sebagai Pentadbir</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 4: DAFTAR GURU & MULTI-ROLE (Admin Action)
+       ===================================================================== -->
+  <div id="modalRegisterUser" class="modal-overlay">
+    <div class="modal-clay-content">
+      <div class="modal-header">
+        <h2>👤 Pendaftaran Guru & Tetapan Peranan Fleksibel</h2>
+        <button class="btn-close-modal" onclick="closeRegisterUserModal()">&times;</button>
+      </div>
+
+      <form onsubmit="saveNewUser(event)">
+        <div class="form-group">
+          <label for="newGuruNama">Nama Penuh Guru *</label>
+          <input type="text" id="newGuruNama" class="clay-input" placeholder="Cth: Cikgu Ahmad Faizal bin Zakaria" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="newGuruNoGaji">Nombor Gaji Guru *</label>
+            <input type="text" id="newGuruNoGaji" class="clay-input" placeholder="Cth: G1150" required>
+          </div>
+          <div class="form-group">
+            <label for="newGuruEmail">E-mel Rasmi Maktab *</label>
+            <input type="email" id="newGuruEmail" class="clay-input" placeholder="nama@mrsm.edu.my" required>
+          </div>
+        </div>
+
+        <!-- Penyerahan Unit Penasihat Fleksibel (Boleh pegang lebih daripada 1 penasihat) -->
+        <div class="form-group">
+          <label>Penyerahan Unit Penasihat (Fleksibel: Pilih mana-mana kombinasi Uniform, Kelab, Sukan, atau SKP):</label>
+          <div id="adminUnitCheckboxesList" style="max-height: 180px; overflow-y: auto; background: var(--bg-surface); padding: 12px; border-radius: var(--radius-md); box-shadow: var(--clay-shadow-input); border: 1px solid rgba(255,255,255,0.8);">
+            <!-- Populated dynamically by JS with categorised checkboxes -->
+          </div>
+          <p style="font-size: 0.725rem; color: var(--text-muted); margin-top: 4px;">
+            Contoh kombinasi: 1 Uniform + 1 Sukan, 1 Uniform + 1 Kelab, atau 1 Uniform + 1 Kelab + 1 SKP.
+          </p>
+        </div>
+
+        <!-- Multi-Role Selection Checkboxes -->
+        <div class="form-group">
+          <label>Tetapan Peranan (Boleh Memegang Lebih Dari Satu Role):</label>
+          <div class="role-checkbox-grid">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.825rem; font-weight: 600; cursor: pointer;">
+              <input type="checkbox" id="roleGuru" checked> Guru Penasihat
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.825rem; font-weight: 600; cursor: pointer;">
+              <input type="checkbox" id="rolePenyemakUniform"> Penyelaras Badan Uniform
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.825rem; font-weight: 600; cursor: pointer;">
+              <input type="checkbox" id="rolePenyemakKelab"> Penyelaras Kelab/Persatuan
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.825rem; font-weight: 600; cursor: pointer;">
+              <input type="checkbox" id="rolePenyemakSukan"> Penyelaras Sukan/Permainan
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.825rem; font-weight: 600; cursor: pointer;">
+              <input type="checkbox" id="roleKetuaPenyelaras"> Ketua Penyelaras Koko
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.825rem; font-weight: 600; cursor: pointer;">
+              <input type="checkbox" id="roleTPPB"> Timbalan Pengetua (TPPB)
+            </label>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+          <button type="button" class="btn-clay btn-clay-secondary" onclick="closeRegisterUserModal()">Batal</button>
+          <button type="submit" class="btn-clay btn-clay-primary">Daftar Guru</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 5: DAFTAR UNIT KOKURIKULUM (Admin Action)
+       ===================================================================== -->
+  <div id="modalRegisterUnit" class="modal-overlay">
+    <div class="modal-clay-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2>🛡️ Tambah Unit Kokurikulum</h2>
+        <button class="btn-close-modal" onclick="closeRegisterUnitModal()">&times;</button>
+      </div>
+
+      <form onsubmit="saveNewUnit(event)">
+        <div class="form-group">
+          <label for="newUnitNama">Nama Unit Kokurikulum *</label>
+          <input type="text" id="newUnitNama" class="clay-input" placeholder="Cth: Kelab Taekwondo / PKBM" required>
+        </div>
+
+        <div class="form-group">
+          <label for="newUnitKategori">Kategori Induk *</label>
+          <select id="newUnitKategori" class="clay-select" required>
+            <option value="Badan Beruniform">Badan Beruniform</option>
+            <option value="Kelab & Persatuan">Kelab & Persatuan</option>
+            <option value="Sukan & Permainan">Sukan & Permainan</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="newUnitKuota">Kuota Maksimum Pelajar *</label>
+          <input type="number" id="newUnitKuota" class="clay-input" value="45" min="10" max="100" required>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+          <button type="button" class="btn-clay btn-clay-secondary" onclick="closeRegisterUnitModal()">Batal</button>
+          <button type="submit" class="btn-clay btn-clay-primary">Simpan Unit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 6: TAMBAH TAKWIM KOKURIKULUM
+       ===================================================================== -->
+  <div id="modalAddTakwim" class="modal-overlay">
+    <div class="modal-clay-content" style="max-width: 520px;">
+      <div class="modal-header">
+        <h2>📅 Tambah Aktiviti Takwim Kokurikulum</h2>
+        <button class="btn-close-modal" onclick="closeAddTakwimModal()">&times;</button>
+      </div>
+
+      <form onsubmit="saveNewTakwim(event)">
+        <div class="form-group">
+          <label for="newTakwimAktiviti">Nama Aktiviti / Acara *</label>
+          <input type="text" id="newTakwimAktiviti" class="clay-input" placeholder="Cth: Perkhemahan Perdana Badan Beruniform" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="newTakwimTarikh">Tarikh *</label>
+            <input type="date" id="newTakwimTarikh" class="clay-input" required>
+          </div>
+          <div class="form-group">
+            <label for="newTakwimMasa">Masa *</label>
+            <input type="text" id="newTakwimMasa" class="clay-input" value="15:00 - 17:00" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="newTakwimKategori">Kategori Acara *</label>
+            <select id="newTakwimKategori" class="clay-select" required>
+              <option value="Pertemuan Mingguan">Pertemuan Mingguan</option>
+              <option value="SKP">Standard Kemahiran (SKP)</option>
+              <option value="Program / Sukan">Program / Sukan</option>
+              <option value="Pertandingan">Pertandingan</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="newTakwimLokasi">Lokasi *</label>
+            <input type="text" id="newTakwimLokasi" class="clay-input" placeholder="Cth: Dewan Selera / Padang" required>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+          <button type="button" class="btn-clay btn-clay-secondary" onclick="closeAddTakwimModal()">Batal</button>
+          <button type="submit" class="btn-clay btn-clay-primary">Simpan Takwim</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 7: TAMBAH PERANCANGAN RPT
+       ===================================================================== -->
+  <div id="modalAddRpt" class="modal-overlay">
+    <div class="modal-clay-content" style="max-width: 520px;">
+      <div class="modal-header">
+        <h2>📖 Tambah Rancangan Tahunan (RPT)</h2>
+        <button class="btn-close-modal" onclick="closeAddRptModal()">&times;</button>
+      </div>
+
+      <form onsubmit="saveNewRpt(event)">
+        <div class="form-group">
+          <label for="newRptUnitSelect">Pilih Unit Kokurikulum *</label>
+          <select id="newRptUnitSelect" class="clay-select" required></select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="newRptMinggu">Minggu *</label>
+            <input type="text" id="newRptMinggu" class="clay-input" placeholder="Cth: Minggu 5" required>
+          </div>
+          <div class="form-group">
+            <label for="newRptTajuk">Tajuk / Topik Modul *</label>
+            <input type="text" id="newRptTajuk" class="clay-input" placeholder="Cth: Latihan Ikatan Silang" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="newRptAktiviti">Huraian Aktiviti *</label>
+          <textarea id="newRptAktiviti" class="clay-textarea" rows="2" placeholder="Nyatakan aktiviti pembelajaran..." required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="newRptBahan">Bahan / Peralatan Diperlukan *</label>
+          <input type="text" id="newRptBahan" class="clay-input" placeholder="Cth: Tali, Kompas, Kertas Majong" required>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+          <button type="button" class="btn-clay btn-clay-secondary" onclick="closeAddRptModal()">Batal</button>
+          <button type="submit" class="btn-clay btn-clay-primary">Simpan RPT</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 8: MUAT NAIK BORANG RASMI (Admin Action)
+       ===================================================================== -->
+  <div id="modalAddBorang" class="modal-overlay">
+    <div class="modal-clay-content" style="max-width: 520px;">
+      <div class="modal-header">
+        <h2>📄 Muat Naik Borang Kokurikulum Baru</h2>
+        <button class="btn-close-modal" onclick="closeAddBorangModal()">&times;</button>
+      </div>
+
+      <form onsubmit="saveNewBorang(event)">
+        <div class="form-group">
+          <label for="newBorangTajuk">Tajuk Borang Rasmi *</label>
+          <input type="text" id="newBorangTajuk" class="clay-input" placeholder="Cth: Borang Perakuan Kesihatan Pelajar" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="newBorangKod">Kod Dokumen *</label>
+            <input type="text" id="newBorangKod" class="clay-input" placeholder="Cth: MRSM/KOKO/11-2026" required>
+          </div>
+          <div class="form-group">
+            <label for="newBorangKategori">Kategori Borang *</label>
+            <select id="newBorangKategori" class="clay-select" required>
+              <option value="Kebenaran & Surat">Kebenaran & Surat</option>
+              <option value="Kewangan & Tuntutan">Kewangan & Tuntutan</option>
+              <option value="Pertandingan">Pertandingan</option>
+              <option value="Penilaian SKP">Penilaian SKP</option>
+              <option value="Kertas Kerja">Kertas Kerja</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="newBorangFormat">Format Fail *</label>
+            <select id="newBorangFormat" class="clay-select" required>
+              <option value="PDF">Dokumen PDF (.pdf)</option>
+              <option value="DOCX">Microsoft Word (.docx)</option>
+              <option value="XLSX">Microsoft Excel (.xlsx)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="newBorangSaiz">Anggaran Saiz</label>
+            <input type="text" id="newBorangSaiz" class="clay-input" value="280 KB">
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+          <button type="button" class="btn-clay btn-clay-secondary" onclick="closeAddBorangModal()">Batal</button>
+          <button type="submit" class="btn-clay btn-clay-primary">Muat Naik Borang</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 6: SETUP & SAMBUNGAN DATABASE GOOGLE SHEETS
+       ===================================================================== -->
+  <div id="modalDatabaseSetup" class="modal-overlay">
+    <div class="modal-clay-content">
+      <div class="modal-header">
+        <div>
+          <h2>🔌 Sambungan Database Google Sheets</h2>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Integrasi Cloud Database MRSM Kuching via Google Apps Script</p>
+        </div>
+        <button class="btn-close-modal" onclick="closeDatabaseSetupModal()">&times;</button>
+      </div>
+
+      <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: var(--radius-md); padding: 14px; margin-bottom: 18px; font-size: 0.825rem; color: #166534;">
+        <div style="font-weight: 800; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+          <span>💡</span> Cara Dapatkan Web App URL:
+        </div>
+        <ol style="margin-left: 20px; line-height: 1.5;">
+          <li>Buka Google Sheets baru & tampal kod <code>google-apps-script/Code.gs</code> ke Apps Script.</li>
+          <li>Tekan <strong>Run</strong> pada fungsi <code>initDatabase</code> sekali untuk jana 6 helaian automatik.</li>
+          <li>Klik <strong>Deploy &gt; New deployment &gt; Web app</strong> (Access: <strong>Anyone</strong>).</li>
+          <li>Salin URL Web App dan tampal di bawah. Rujuk <a href="PANDUAN_SETUP_GOOGLE_SHEETS.md" target="_blank" style="color: #059669; font-weight: 700;">Panduan Lengkap</a>.</li>
+        </ol>
+      </div>
+
+      <form id="formDatabaseSetup" onsubmit="saveDatabaseConfig(event)">
+        <div class="form-group">
+          <label for="inputGasUrl">URL Google Apps Script Web App (API Endpoint) *</label>
+          <input type="url" id="inputGasUrl" class="clay-input" placeholder="https://script.google.com/macros/s/AKfycb.../exec" required>
+          <small style="color: var(--text-muted); font-size: 0.725rem; margin-top: 4px; display: block;">Pastikan URL berakhir dengan <code>/exec</code>.</small>
+        </div>
+
+        <!-- Connection Test Status Box -->
+        <div id="dbStatusAlertBox" style="padding: 12px 14px; border-radius: var(--radius-md); margin-bottom: 16px; font-size: 0.825rem; display: none;">
+          <!-- Dynamically populated -->
+        </div>
+
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
+          <button type="button" class="btn-clay btn-clay-blue btn-clay-sm" onclick="handleTestDbConnection()" style="flex: 1;">
+            🧪 Uji Sambungan
+          </button>
+          <button type="button" class="btn-clay btn-clay-orange btn-clay-sm" onclick="handleSyncFromSheets()" style="flex: 1;">
+            🔄 Tarik Data Terkini
+          </button>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgba(255,255,255,0.8); padding-top: 16px;">
+          <button type="button" class="btn-clay btn-clay-secondary" onclick="closeDatabaseSetupModal()">Batal</button>
+          <button type="button" class="btn-clay btn-clay-danger btn-clay-sm" onclick="handleDisconnectDb()">Putuskan</button>
+          <button type="submit" class="btn-clay btn-clay-primary">💾 Simpan Sambungan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Mobile Clay Bottom Navigation Bar (Mobile First) -->
+  <nav class="clay-bottom-nav">
+    <button class="bottom-nav-item active" data-tab="dashboard">
+      <span class="bottom-nav-icon">📊</span>
+      <span class="bottom-nav-label">Dashboard</span>
+    </button>
+    <button class="bottom-nav-item" data-tab="pelaporan">
+      <span class="bottom-nav-icon">📝</span>
+      <span class="bottom-nav-label">Laporan</span>
+      <span id="bottomNavBadgeCount" class="bottom-nav-badge" style="display: none;">0</span>
+    </button>
+    <button class="bottom-nav-item" data-tab="maklumat">
+      <span class="bottom-nav-icon">📅</span>
+      <span class="bottom-nav-label">Takwim</span>
+    </button>
+    <button class="bottom-nav-item" data-tab="borang">
+      <span class="bottom-nav-icon">⬇️</span>
+      <span class="bottom-nav-label">Borang</span>
+    </button>
+    <button class="bottom-nav-item" onclick="openMobileSidebar()">
+      <span class="bottom-nav-icon">☰</span>
+      <span class="bottom-nav-label">Menu</span>
+    </button>
+  </nav>
+
+  <!-- Mobile Floating Action Button (FAB) -->
+  <button class="mobile-clay-fab" onclick="openCreateReportModal()" aria-label="Cipta Pelaporan Baru">
+    <span>+</span>
+  </button>
+
+  <script>
+    // Tab switcher in login modal
+    function switchAuthTab(type) {
+      if (type === 'guru') {
+        document.getElementById('tabLoginGuru').classList.add('active');
+        document.getElementById('tabLoginAdmin').classList.remove('active');
+        document.getElementById('formLoginGuru').style.display = 'block';
+        document.getElementById('formLoginAdmin').style.display = 'none';
+      } else {
+        document.getElementById('tabLoginGuru').classList.remove('active');
+        document.getElementById('tabLoginAdmin').classList.add('active');
+        document.getElementById('formLoginGuru').style.display = 'none';
+        document.getElementById('formLoginAdmin').style.display = 'block';
+      }
+    }
+  </script>
+
+  <!-- Application Scripts -->
+  <script src="js/data.js?v=4"></script>
+  <script src="js/api.js?v=4"></script>
+  <script src="js/app.js?v=4"></script>
+</body>
+</html>
