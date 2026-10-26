@@ -92,6 +92,7 @@ const DatabaseService = {
 
         const mergedData = {
           users: (incoming.users && incoming.users.length > 0) ? incoming.users : currentData.users,
+          students: (incoming.students && incoming.students.length > 0) ? incoming.students : currentData.students,
           units: (incoming.units && incoming.units.length > 0) ? incoming.units : currentData.units,
           pelaporan: (incoming.pelaporan && incoming.pelaporan.length > 0) ? incoming.pelaporan : currentData.pelaporan,
           takwim: (incoming.takwim && incoming.takwim.length > 0) ? incoming.takwim : currentData.takwim,

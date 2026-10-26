@@ -77,9 +77,14 @@ function formatRoleName(role) {
     case "admin": return "Pentadbir";
     case "tppb": return "TPPB (Pengesah)";
     case "ketua_penyelaras": return "Ketua Penyelaras";
-    case "penyemak_uniform": return "Penyelaras Uniform";
-    case "penyemak_kelab": return "Penyelaras Kelab";
-    case "penyemak_sukan": return "Penyelaras Sukan";
+    case "penyelaras_uniform":
+    case "penyemak_uniform": return "Penyelaras Badan Beruniform";
+    case "penyelaras_kelab":
+    case "penyemak_kelab": return "Penyelaras Kelab & Persatuan";
+    case "penyelaras_sukan":
+    case "penyemak_sukan": return "Penyelaras Sukan & Permainan";
+    case "penyelaras_skp":
+    case "penyemak_skp": return "Penyelaras SKP";
     case "guru": return "Guru Penasihat";
     default: return role;
   }
@@ -247,6 +252,9 @@ function renderApp() {
     case "pelaporan":
       container.innerHTML = renderPelaporanView();
       break;
+    case "pelajar":
+      container.innerHTML = renderPelajarView();
+      break;
     case "maklumat":
       container.innerHTML = renderMaklumatView();
       break;
@@ -273,9 +281,17 @@ function updatePendingBadges() {
   if (user) {
     if (user.roles.includes("tppb")) {
       count = data.pelaporan.filter(l => l.status === "disemak").length;
-    } else if (user.roles.some(r => r.startsWith("penyemak") || r === "ketua_penyelaras")) {
+    } else if (user.roles.some(r => r.startsWith("penyemak") || r.startsWith("penyelaras") || r === "ketua_penyelaras")) {
       count = data.pelaporan.filter(l => l.status === "dihantar").length;
     }
+  }
+
+  // Update Student Enrolment Badge
+  const studentBadge = document.getElementById("pelajarStatusBadgeCount");
+  if (studentBadge && data.students) {
+    const completeCount = data.students.filter(s => getStudentKokurikulumStatus(s).isComplete).length;
+    studentBadge.textContent = `${completeCount}/${data.students.length} Lengkap`;
+    studentBadge.style.background = completeCount === data.students.length ? "#10b981" : "#f59e0b";
   }
 
   // Update Sidebar Badge
@@ -334,6 +350,89 @@ function renderDashboardView() {
     `;
   }).join("");
 
+  const user = appState.currentUser;
+
+  // Coordinator Quick Control Banner
+  let coordinatorBannerHtml = "";
+  if (user) {
+    const isCoordUniform = user.roles.includes("penyelaras_uniform") || user.roles.includes("penyemak_uniform");
+    const isCoordSukan = user.roles.includes("penyelaras_sukan") || user.roles.includes("penyemak_sukan");
+    const isCoordKelab = user.roles.includes("penyelaras_kelab") || user.roles.includes("penyemak_kelab");
+    const isCoordSkp = user.roles.includes("penyelaras_skp") || user.roles.includes("penyemak_skp");
+
+    if (isCoordUniform || isCoordSukan || isCoordKelab || isCoordSkp) {
+      let catName = "";
+      let catIcon = "";
+      if (isCoordUniform) { catName = "Badan Beruniform"; catIcon = "🛡️"; }
+      else if (isCoordSukan) { catName = "Sukan & Permainan"; catIcon = "⚽"; }
+      else if (isCoordKelab) { catName = "Kelab & Persatuan"; catIcon = "🎭"; }
+      else if (isCoordSkp) { catName = "SKP"; catIcon = "⭐"; }
+
+      coordinatorBannerHtml = `
+        <div class="coordinator-card">
+          <div>
+            <div style="font-weight: 800; font-size: 1.05rem; color: #1e3a8a; display: flex; align-items: center; gap: 8px;">
+              <span>${catIcon}</span> Portal Penyelaras ${catName}
+            </div>
+            <p style="font-size: 0.8rem; color: #3b82f6; margin-top: 4px;">
+              Sebagai Penyelaras ${catName}, anda mempunyai kuasa untuk mencipta unit baharu & melantik Guru Penasihat.
+            </p>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn-clay btn-clay-blue btn-clay-sm" onclick="openCoordinatorCreateUnitModal('${catName}')">
+              ➕ Cipta ${catName}
+            </button>
+            <button class="btn-clay btn-clay-primary btn-clay-sm" onclick="openCoordinatorManageAdvisorsModal('${catName}')">
+              👥 Lantik Guru Penasihat
+            </button>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  // Teacher's advised units card
+  let myUnitsSectionHtml = "";
+  if (user && user.units && user.units.length > 0) {
+    const myUnits = data.units.filter(u => user.units.includes(u.id));
+    if (myUnits.length > 0) {
+      const unitCards = myUnits.map(u => `
+        <div class="clay-card" style="padding: 16px; border: 1.5px solid #bfdbfe;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <span class="role-pill">${u.kategori}</span>
+            <span class="badge-status approved">${u.ahli || 0} / ${u.kuota} Ahli</span>
+          </div>
+          <h4 style="font-size: 1rem; font-weight: 800; margin-bottom: 6px; color: var(--text-main);">${u.nama}</h4>
+          <p style="font-size: 0.775rem; color: var(--text-muted); margin-bottom: 14px;">Bimbingan Guru Penasihat: ${user.nama}</p>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn-clay btn-clay-sm btn-clay-primary" onclick="openRegisterStudentToUnitModal('${u.id}')" style="flex: 1;">
+              👥 Daftar Ahli Pelajar
+            </button>
+            <button class="btn-clay btn-clay-sm btn-clay-blue" onclick="jumpToRptUnit('${u.id}')" style="flex: 1;">
+              📅 Key-In RPT
+            </button>
+          </div>
+        </div>
+      `).join("");
+
+      myUnitsSectionHtml = `
+        <div style="margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 6px;">
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-main);">
+              🎯 Unit Kokurikulum Bimbingan Anda (${myUnits.length} Unit)
+            </h3>
+            <span style="font-size: 0.775rem; color: var(--text-muted);">
+              Daftar pelajar maktab ke dalam unit & lengkapkan silibus RPT
+            </span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+            ${unitCards}
+          </div>
+        </div>
+      `;
+    }
+  }
+
   return `
     <div class="content-header">
       <div class="header-title-box">
@@ -346,6 +445,9 @@ function renderDashboardView() {
         </button>
       </div>
     </div>
+
+    ${coordinatorBannerHtml}
+    ${myUnitsSectionHtml}
 
     <!-- Clay Stat Cards Grid (Inspired by Clay Reference Card) -->
     <div class="stat-cards-grid">
@@ -879,44 +981,265 @@ function setRumahFilter(filter) {
 }
 
 // ==========================================================================
-// 4. RANCANGAN TAHUNAN KOKURIKULUM (RPT)
+// 4. DIREKTORI PELAJAR & STATUS KOKURIKULUM (WAJIB 3 KOKO + SKP)
 // ==========================================================================
-function renderRptView() {
+function renderPelajarView() {
   const data = getAppData();
+  const user = appState.currentUser;
+  const students = data.students || [];
 
-  const rptCards = data.rpt.map(item => {
-    const unit = data.units.find(u => u.id === item.unit_id) || { nama: "Unit Koko" };
+  const completeCount = students.filter(s => getStudentKokurikulumStatus(s).isComplete).length;
+  const incompleteCount = students.length - completeCount;
+  const skpCount = students.filter(s => Boolean(s.skp_id)).length;
+
+  const rows = students.map(s => {
+    const statusObj = getStudentKokurikulumStatus(s);
+    const uUniform = data.units.find(u => u.id === s.uniform_id);
+    const uKelab = data.units.find(u => u.id === s.kelab_id);
+    const uSukan = data.units.find(u => u.id === s.sukan_id);
+    const uSkp = data.units.find(u => u.id === s.skp_id);
+
     return `
-      <div class="clay-card" style="padding: 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <span class="role-pill" style="font-size: 0.75rem;">${item.minggu}</span>
-          <span class="badge-status ${item.status === 'Selesai' ? 'approved' : 'pending'}">${item.status}</span>
-        </div>
-        <h4 style="font-size: 1rem; font-weight: 800; color: var(--text-main); margin-bottom: 4px;">${item.tajuk}</h4>
-        <p style="font-size: 0.8rem; color: var(--primary); font-weight: 700; margin-bottom: 8px;">${unit.nama}</p>
-        <p style="font-size: 0.825rem; color: var(--text-muted); margin-bottom: 10px;">${item.aktiviti}</p>
-        <div style="font-size: 0.775rem; color: var(--text-light); border-top: 1px dashed rgba(0,0,0,0.08); padding-top: 6px;">
-          📦 <strong>Keperluan Bahan:</strong> ${item.bahan}
-        </div>
-      </div>
+      <tr class="student-row-item">
+        <td><code>${s.no_maktab}</code></td>
+        <td>
+          <strong>${s.nama}</strong>
+          <div style="font-size: 0.725rem; color: var(--text-muted);">${s.jantina} &bull; Rumah ${s.rumah_sukan}</div>
+        </td>
+        <td><span class="role-pill">${s.tingkatan}</span> <span style="font-size: 0.75rem; color: var(--text-light);">${s.kelas}</span></td>
+        <td>${uUniform ? `🛡️ <strong>${uUniform.nama}</strong>` : `<span style="color: #ef4444; font-size: 0.775rem; font-weight: 700;">❌ Belum Daftar</span>`}</td>
+        <td>${uKelab ? `💡 <strong>${uKelab.nama}</strong>` : `<span style="color: #ef4444; font-size: 0.775rem; font-weight: 700;">❌ Belum Daftar</span>`}</td>
+        <td>${uSukan ? `⚽ <strong>${uSukan.nama}</strong>` : `<span style="color: #ef4444; font-size: 0.775rem; font-weight: 700;">❌ Belum Daftar</span>`}</td>
+        <td>${uSkp ? `<span class="badge-skp-star">⭐ ${uSkp.nama}</span>` : `<span style="color: #94a3b8; font-size: 0.75rem;">-</span>`}</td>
+        <td>
+          <span class="${statusObj.isComplete ? 'badge-complete' : 'badge-incomplete'}">
+            ${statusObj.isComplete ? '✅ Lengkap (3/3)' : `⚠️ Belum (${statusObj.count}/3)`}
+          </span>
+        </td>
+      </tr>
     `;
   }).join("");
 
   return `
     <div class="content-header">
       <div class="header-title-box">
-        <h1>Rancangan Tahunan Kokurikulum (RPT)</h1>
-        <p>Silabus dan Perancangan Aktiviti Mingguan Badan Beruniform, Kelab & Sukan</p>
+        <h1>Direktori Pelajar & Penglibatan Kokurikulum</h1>
+        <p>Setiap pelajar <strong>wajib menyertai 3 kokurikulum</strong> (Badan Beruniform, Kelab & Persatuan, Sukan & Permainan). Unit SKP khusus bagi pelajar terpilih.</p>
       </div>
       <div class="header-actions">
-        <button class="btn-clay btn-clay-primary" onclick="openAddRptModal()">
-          <span>+</span> Tambah Perancangan RPT
+        ${user && user.roles.includes("admin") ? `
+          <button class="btn-clay btn-clay-primary" onclick="openRegisterStudentModal()">
+            <span>+</span> Daftar Pelajar Baru
+          </button>
+        ` : ''}
+      </div>
+    </div>
+
+    <!-- Status Cards Grid -->
+    <div class="stat-cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 24px;">
+      <div class="clay-stat-card">
+        <div class="stat-header">
+          <div class="stat-icon" style="background: #e0f2fe; color: #0284c7;">🎓</div>
+          <span class="stat-pill blue">Enrolmen</span>
+        </div>
+        <div class="stat-body">
+          <h3>${students.length} Pelajar</h3>
+          <p>Jumlah Pelajar Maktab Berdaftar</p>
+        </div>
+      </div>
+
+      <div class="clay-stat-card">
+        <div class="stat-header">
+          <div class="stat-icon" style="background: #dcfce7; color: #16a34a;">✅</div>
+          <span class="stat-pill green">Syarat 3/3</span>
+        </div>
+        <div class="stat-body">
+          <h3>${completeCount} Pelajar</h3>
+          <p>Lengkap 3 Kokurikulum Wajib</p>
+        </div>
+      </div>
+
+      <div class="clay-stat-card">
+        <div class="stat-header">
+          <div class="stat-icon" style="background: #fef3c7; color: #d97706;">⚠️</div>
+          <span class="stat-pill orange">Perlu Tindakan</span>
+        </div>
+        <div class="stat-body">
+          <h3>${incompleteCount} Pelajar</h3>
+          <p>Belum Cukup 3 Kokurikulum</p>
+        </div>
+      </div>
+
+      <div class="clay-stat-card">
+        <div class="stat-header">
+          <div class="stat-icon" style="background: #f3e8ff; color: #7c3aed;">⭐</div>
+          <span class="stat-pill purple">Kepimpinan</span>
+        </div>
+        <div class="stat-body">
+          <h3>${skpCount} Terpilih</h3>
+          <p>Sekretariat Kepimpinan Pelajar (SKP)</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="clay-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+        <h3 style="font-size: 1.15rem; font-weight: 800;">Senarai Pelajar & Status Kokurikulum</h3>
+        <input type="text" id="filterStudentInput" class="clay-input" style="max-width: 280px;" placeholder="🔍 Cari nama / no maktab..." onkeyup="filterStudentDirectoryTable()">
+      </div>
+
+      <div class="mobile-table-hint">👉 Leret ke tepi untuk lihat maklumat & tindakan penuh</div>
+      <div class="clay-table-responsive">
+        <table class="clay-table" id="studentDirectoryTable">
+          <thead>
+            <tr>
+              <th>No. Maktab</th>
+              <th>Nama Pelajar</th>
+              <th>Tingkatan & Kelas</th>
+              <th>1. Badan Beruniform *</th>
+              <th>2. Kelab & Persatuan *</th>
+              <th>3. Sukan & Permainan *</th>
+              <th>SKP (Terpilih Sahaja)</th>
+              <th>Status Enrolmen</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ==========================================================================
+// 5. RANCANGAN PENGAJARAN TAHUNAN KOKURIKULUM (RPT)
+// Format Standard: [1. Bil., 2. Minggu, 3. Aktiviti, 4. Objektif, 5. Tarikh]
+// ==========================================================================
+function renderRptView() {
+  const data = getAppData();
+  const user = appState.currentUser;
+
+  // Dapatkan unit-unit yang cikgu ini bimbing, atau semua unit jika admin/penyelaras
+  let availableUnits = data.units;
+  if (user && user.roles.length === 1 && user.roles[0] === "guru" && user.units && user.units.length > 0) {
+    availableUnits = data.units.filter(u => user.units.includes(u.id));
+  }
+
+  if (!appState.selectedRptUnitId && availableUnits.length > 0) {
+    appState.selectedRptUnitId = availableUnits[0].id;
+  }
+
+  const selectedUnit = data.units.find(u => u.id === appState.selectedRptUnitId) || availableUnits[0] || data.units[0];
+  const unitId = selectedUnit ? selectedUnit.id : "";
+  const unitNama = selectedUnit ? selectedUnit.nama : "Unit Kokurikulum";
+
+  // Dapatkan baris RPT untuk unit ini
+  let rptRows = data.rpt.filter(r => r.unit_id === unitId);
+  if (rptRows.length === 0) {
+    // Sediakan templat 12 minggu yang dibekalkan sedia ada secara automatik!
+    rptRows = generateDefaultRptRows(unitId, unitNama).map((item, idx) => ({
+      id: `rpt_${unitId}_${idx + 1}`,
+      unit_id: unitId,
+      bil: item.bil,
+      minggu: item.minggu,
+      aktiviti: item.aktiviti,
+      objektif: item.objektif,
+      tarikh: item.tarikh,
+      status: item.status
+    }));
+    // Simpan ke data
+    data.rpt.push(...rptRows);
+    saveAppData(data);
+  }
+
+  // Sort by bil
+  rptRows.sort((a, b) => (Number(a.bil) || 0) - (Number(b.bil) || 0));
+
+  const unitOptions = availableUnits.map(u => 
+    `<option value="${u.id}" ${u.id === unitId ? "selected" : ""}>${u.nama} (${u.kategori})</option>`
+  ).join("");
+
+  const rowsHtml = rptRows.map(r => {
+    return `
+      <tr>
+        <td style="text-align: center; font-weight: 800; width: 60px;">${r.bil}</td>
+        <td style="white-space: nowrap; font-weight: 700; width: 120px;"><span class="role-pill">${r.minggu}</span></td>
+        <td>
+          <div style="font-weight: 600; color: var(--text-main); font-size: 0.85rem;">${r.aktiviti || '<em style="color:#94a3b8;">Klik Kemaskini untuk isi aktiviti</em>'}</div>
+        </td>
+        <td>
+          <div style="font-size: 0.825rem; color: var(--text-muted);">${r.objektif || '<em style="color:#94a3b8;">Klik Kemaskini untuk isi objektif</em>'}</div>
+        </td>
+        <td style="white-space: nowrap; font-size: 0.825rem; font-weight: 600;">${r.tarikh ? `📅 ${r.tarikh}` : '<span style="color:#94a3b8;">Belum Ditetapkan</span>'}</td>
+        <td style="white-space: nowrap;">
+          <span class="badge-status ${r.status === 'Selesai' ? 'approved' : 'pending'}">${r.status || 'Dalam Perancangan'}</span>
+        </td>
+        <td style="white-space: nowrap; text-align: center;">
+          <button class="btn-clay btn-clay-sm btn-clay-blue" onclick="openEditRptRowModal('${unitId}', ${r.bil})">
+            ✏️ Key-In / Kemaskini
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  return `
+    <div class="content-header">
+      <div class="header-title-box">
+        <h1>Rancangan Pengajaran Tahunan (RPT) Kokurikulum</h1>
+        <p>Format Standard Maktab: <strong>1. Bil. | 2. Minggu | 3. Aktiviti | 4. Objektif | 5. Tarikh</strong></p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-clay btn-clay-primary" onclick="syncAllRptRows('${unitId}')">
+          💾 Simpan Semua RPT ke Cloud
         </button>
       </div>
     </div>
 
-    <div class="reports-card-grid">
-      ${rptCards}
+    <!-- Unit Selector Bar -->
+    <div class="unit-selector-bar">
+      <label for="rptUnitSelector" style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+        <span>🎯</span> Pilih Unit Kokurikulum:
+      </label>
+      <select id="rptUnitSelector" class="clay-select" style="max-width: 380px; flex: 1;" onchange="changeRptUnit(this.value)">
+        ${unitOptions}
+      </select>
+      <span style="font-size: 0.775rem; color: var(--text-muted);">
+        Format templat dibekalkan sedia ada. Cikgu hanya perlu key-in aktiviti, objektif & tarikh.
+      </span>
+    </div>
+
+    <div class="clay-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <h3 style="font-size: 1.15rem; font-weight: 800;">Jadual Rancangan Tahunan: ${unitNama}</h3>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">Silibus perancangan aktiviti sepanjang sesi persekolahan</p>
+        </div>
+        <button class="btn-clay btn-clay-sm btn-clay-secondary" onclick="addNewRptWeek('${unitId}')">
+          ➕ Tambah Minggu (Minggu ${rptRows.length + 1})
+        </button>
+      </div>
+
+      <div class="mobile-table-hint">👉 Leret ke tepi untuk lihat maklumat & tindakan penuh</div>
+      <div class="clay-table-responsive">
+        <table class="clay-table">
+          <thead>
+            <tr>
+              <th style="text-align: center;">1. Bil.</th>
+              <th>2. Minggu</th>
+              <th>3. Aktiviti Kokurikulum</th>
+              <th>4. Objektif Pembelajaran</th>
+              <th>5. Tarikh</th>
+              <th>Status</th>
+              <th style="text-align: center;">Tindakan</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
     </div>
   `;
 }
@@ -982,6 +1305,13 @@ function simulasiMuatTurun(tajuk, format) {
 // ==========================================================================
 function renderAdminView() {
   const data = getAppData();
+  const students = data.students || [];
+
+  // Cari Penyelaras semasa
+  const coordUniform = data.users.find(u => u.roles.includes("penyelaras_uniform") || u.roles.includes("penyemak_uniform"));
+  const coordSukan = data.users.find(u => u.roles.includes("penyelaras_sukan") || u.roles.includes("penyemak_sukan"));
+  const coordKelab = data.users.find(u => u.roles.includes("penyelaras_kelab") || u.roles.includes("penyemak_kelab"));
+  const coordSkp = data.users.find(u => u.roles.includes("penyelaras_skp") || u.roles.includes("penyemak_skp"));
 
   const guruRows = data.users.filter(u => u.roles[0] !== "admin").map(u => {
     const rolesPills = u.roles.map(r => `<span class="role-pill">${formatRoleName(r)}</span>`).join(" ");
@@ -1007,37 +1337,89 @@ function renderAdminView() {
     `;
   }).join("");
 
-  const unitRows = data.units.map(un => `
-    <tr>
-      <td><strong>${un.nama}</strong></td>
-      <td><span class="role-pill">${un.kategori}</span></td>
-      <td>${un.ahli} / ${un.kuota} Pelajar</td>
-      <td>
-        <span class="badge-status approved">Aktif</span>
-      </td>
-    </tr>
-  `).join("");
+  const unitRows = data.units.map(un => {
+    const penasihatList = (un.penasihat_ids || []).map(pid => {
+      const guru = data.users.find(u => u.id === pid);
+      return guru ? guru.nama : pid;
+    }).join(", ") || "Belum Dilantik";
+
+    return `
+      <tr>
+        <td><strong>${un.nama}</strong></td>
+        <td><span class="role-pill">${un.kategori}</span></td>
+        <td style="font-size: 0.825rem; color: var(--text-main);">${penasihatList}</td>
+        <td>${un.ahli || 0} / ${un.kuota} Pelajar</td>
+        <td>
+          <button class="btn-clay btn-clay-sm btn-clay-primary" onclick="openRegisterStudentToUnitModal('${un.id}')">
+            👥 Urus Ahli
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
 
   return `
     <div class="content-header">
       <div class="header-title-box">
         <h1>Portal Pentadbir: Pengurusan Pengguna & Kokurikulum</h1>
-        <p>Pendaftaran guru, penetapan Multi-Role, pembahagian 2 unit penasihat & pendaftaran kokurikulum</p>
+        <p>Pendaftaran Guru, Pendaftaran Pelajar, dan Pelantikan Penyelaras (Uniform, Sukan, Kelab & SKP)</p>
       </div>
-      <div class="header-actions">
+      <div class="header-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
         <button class="btn-clay btn-clay-primary" onclick="openRegisterUserModal()">
-          <span>+</span> Daftar Guru Baru
+          <span>+</span> Daftar Guru
         </button>
-        <button class="btn-clay btn-clay-blue" onclick="openRegisterUnitModal()">
-          <span>+</span> Tambah Unit Koko
+        <button class="btn-clay btn-clay-blue" onclick="openRegisterStudentModal()">
+          <span>🎓</span> Daftar Pelajar
         </button>
+        <button class="btn-clay btn-clay-orange" onclick="openAssignCoordinatorModal()">
+          <span>👑</span> Lantik Penyelaras
+        </button>
+      </div>
+    </div>
+
+    <!-- 4 Coordinator Assignment Summary Cards -->
+    <div style="margin-bottom: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-main);">
+          👑 Penyelaras Kategori Kokurikulum MRSM Kuching
+        </h3>
+        <button class="btn-clay btn-clay-sm btn-clay-secondary" onclick="openAssignCoordinatorModal()">
+          ⚙️ Kemaskini Penyelaras
+        </button>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;">
+        <div class="clay-card" style="padding: 14px; border-left: 4px solid #10b981;">
+          <div style="font-size: 0.725rem; font-weight: 800; color: #047857; text-transform: uppercase;">Badan Beruniform</div>
+          <h4 style="font-size: 0.95rem; font-weight: 800; margin: 4px 0;">${coordUniform ? coordUniform.nama : 'Belum Ditetapkan'}</h4>
+          <p style="font-size: 0.75rem; color: var(--text-muted);">${coordUniform ? coordUniform.no_gaji : '-'}</p>
+        </div>
+        <div class="clay-card" style="padding: 14px; border-left: 4px solid #f97316;">
+          <div style="font-size: 0.725rem; font-weight: 800; color: #c2410c; text-transform: uppercase;">Sukan & Permainan</div>
+          <h4 style="font-size: 0.95rem; font-weight: 800; margin: 4px 0;">${coordSukan ? coordSukan.nama : 'Belum Ditetapkan'}</h4>
+          <p style="font-size: 0.75rem; color: var(--text-muted);">${coordSukan ? coordSukan.no_gaji : '-'}</p>
+        </div>
+        <div class="clay-card" style="padding: 14px; border-left: 4px solid #3b82f6;">
+          <div style="font-size: 0.725rem; font-weight: 800; color: #1d4ed8; text-transform: uppercase;">Kelab & Persatuan</div>
+          <h4 style="font-size: 0.95rem; font-weight: 800; margin: 4px 0;">${coordKelab ? coordKelab.nama : 'Belum Ditetapkan'}</h4>
+          <p style="font-size: 0.75rem; color: var(--text-muted);">${coordKelab ? coordKelab.no_gaji : '-'}</p>
+        </div>
+        <div class="clay-card" style="padding: 14px; border-left: 4px solid #8b5cf6;">
+          <div style="font-size: 0.725rem; font-weight: 800; color: #6d28d9; text-transform: uppercase;">SKP (Kepimpinan)</div>
+          <h4 style="font-size: 0.95rem; font-weight: 800; margin: 4px 0;">${coordSkp ? coordSkp.nama : 'Belum Ditetapkan'}</h4>
+          <p style="font-size: 0.75rem; color: var(--text-muted);">${coordSkp ? coordSkp.no_gaji : '-'}</p>
+        </div>
       </div>
     </div>
 
     <div class="admin-layout-grid">
       <!-- Senarai Guru & Multi-Role -->
       <div class="clay-card">
-        <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 14px;">Direktori Guru & Penyerahan Role</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <h3 style="font-size: 1.15rem; font-weight: 800;">Direktori Guru Maktab</h3>
+          <button class="btn-clay btn-clay-sm btn-clay-primary" onclick="openRegisterUserModal()">
+            + Guru Baru
+          </button>
+        </div>
         <div class="mobile-table-hint">👉 Leret ke tepi untuk lihat maklumat guru penuh</div>
         <div class="clay-table-responsive">
           <table class="clay-table">
@@ -1059,15 +1441,19 @@ function renderAdminView() {
 
       <!-- Senarai Unit Kokurikulum -->
       <div class="clay-card">
-        <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 14px;">Senarai Unit Kokurikulum Berdaftar</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <h3 style="font-size: 1.15rem; font-weight: 800;">Senarai Unit Kokurikulum</h3>
+          <span style="font-size: 0.75rem; color: var(--text-muted);">${data.units.length} Unit Berdaftar</span>
+        </div>
         <div class="clay-table-responsive">
           <table class="clay-table">
             <thead>
               <tr>
                 <th>Nama Unit</th>
                 <th>Kategori</th>
+                <th>Guru Penasihat</th>
                 <th>Keahlian</th>
-                <th>Status</th>
+                <th>Tindakan</th>
               </tr>
             </thead>
             <tbody>
@@ -1945,4 +2331,523 @@ function saveDatabaseConfig(e) {
   closeDatabaseSetupModal();
   showToast("Konfigurasi Google Sheets berjaya disimpan!");
 }
+
+// ==========================================================================
+// 14. HANDLER RPT: FORMAT STANDARD (1. Bil, 2. Minggu, 3. Aktiviti, 4. Objektif, 5. Tarikh)
+// ==========================================================================
+function jumpToRptUnit(unitId) {
+  appState.selectedRptUnitId = unitId;
+  appState.activeTab = "rpt";
+  renderApp();
+}
+
+function changeRptUnit(unitId) {
+  appState.selectedRptUnitId = unitId;
+  renderApp();
+}
+
+function addNewRptWeek(unitId) {
+  const data = getAppData();
+  const unit = data.units.find(u => u.id === unitId);
+  const existing = data.rpt.filter(r => r.unit_id === unitId);
+  const nextBil = existing.length + 1;
+
+  const newRow = {
+    id: `rpt_${unitId}_${nextBil}_${Date.now()}`,
+    unit_id: unitId,
+    bil: nextBil,
+    minggu: `Minggu ${nextBil}`,
+    aktiviti: "",
+    objektif: "",
+    tarikh: "",
+    status: "Dalam Perancangan"
+  };
+
+  data.rpt.push(newRow);
+  saveAppData(data);
+  renderApp();
+  openEditRptRowModal(unitId, nextBil);
+}
+
+function openEditRptRowModal(unitId, bil) {
+  const data = getAppData();
+  const unit = data.units.find(u => u.id === unitId);
+  const row = data.rpt.find(r => r.unit_id === unitId && Number(r.bil) === Number(bil));
+
+  document.getElementById("rptEditUnitId").value = unitId;
+  document.getElementById("rptEditRowId").value = row ? row.id : "";
+  document.getElementById("rptEditBil").value = bil;
+  document.getElementById("rptEditMinggu").value = row ? row.minggu : `Minggu ${bil}`;
+  document.getElementById("rptEditTarikh").value = row && row.tarikh ? row.tarikh : "";
+  document.getElementById("rptEditAktiviti").value = row ? row.aktiviti : "";
+  document.getElementById("rptEditObjektif").value = row ? row.objektif : "";
+  document.getElementById("rptEditStatus").value = row ? row.status : "Dalam Perancangan";
+
+  const subtitle = document.getElementById("rptModalSubtitle");
+  if (subtitle && unit) {
+    subtitle.textContent = `Unit: ${unit.nama} (${unit.kategori}) &bull; Minggu ${bil}`;
+  }
+
+  document.getElementById("modalEditRptRow").classList.add("active");
+}
+
+function closeEditRptRowModal() {
+  document.getElementById("modalEditRptRow").classList.remove("active");
+}
+
+function saveRptRowData(e) {
+  e.preventDefault();
+  const data = getAppData();
+
+  const unitId = document.getElementById("rptEditUnitId").value;
+  const rowId = document.getElementById("rptEditRowId").value;
+  const bil = parseInt(document.getElementById("rptEditBil").value);
+  const minggu = document.getElementById("rptEditMinggu").value.trim();
+  const tarikh = document.getElementById("rptEditTarikh").value;
+  const aktiviti = document.getElementById("rptEditAktiviti").value.trim();
+  const objektif = document.getElementById("rptEditObjektif").value.trim();
+  const status = document.getElementById("rptEditStatus").value;
+
+  let row = data.rpt.find(r => r.unit_id === unitId && Number(r.bil) === bil);
+  if (!row) {
+    row = {
+      id: rowId || `rpt_${unitId}_${bil}`,
+      unit_id: unitId,
+      bil: bil
+    };
+    data.rpt.push(row);
+  }
+
+  row.minggu = minggu;
+  row.tarikh = tarikh;
+  row.aktiviti = aktiviti;
+  row.objektif = objektif;
+  row.status = status;
+
+  saveAppData(data);
+
+  // Sync to Cloud
+  if (window.DatabaseService) {
+    DatabaseService.postAction("saveRpt", {
+      id: row.id,
+      unit_id: unitId,
+      bil: bil,
+      minggu: minggu,
+      aktiviti: aktiviti,
+      objektif: objektif,
+      tarikh: tarikh,
+      status: status
+    });
+  }
+
+  closeEditRptRowModal();
+  showToast(`Perancangan RPT ${minggu} berjaya disimpan!`);
+  renderApp();
+}
+
+async function syncAllRptRows(unitId) {
+  const data = getAppData();
+  const unit = data.units.find(u => u.id === unitId);
+  const rows = data.rpt.filter(r => r.unit_id === unitId);
+
+  if (window.DatabaseService && DatabaseService.isConnected()) {
+    showToast("Menyegerakkan semua baris RPT ke Google Sheets...");
+    const res = await DatabaseService.postAction("saveRptBatch", {
+      unitId: unitId,
+      unitNama: unit ? unit.nama : "",
+      rows: rows
+    });
+    showToast(res.message || "RPT berjaya disegerakkan ke Google Sheets!");
+  } else {
+    showToast("RPT disimpan secara tempatan (Offline Mode).");
+  }
+}
+
+// ==========================================================================
+// 15. HANDLER ADMIN: DAFTAR PELAJAR & TETAPAN PENYELARAS
+// ==========================================================================
+function openRegisterStudentModal() {
+  document.getElementById("modalRegisterStudent").classList.add("active");
+}
+
+function closeRegisterStudentModal() {
+  document.getElementById("modalRegisterStudent").classList.remove("active");
+}
+
+function saveNewStudent(e) {
+  e.preventDefault();
+  const data = getAppData();
+
+  const noMaktab = document.getElementById("newStdNoMaktab").value.trim().toUpperCase();
+  const nama = document.getElementById("newStdNama").value.trim();
+  const jantina = document.getElementById("newStdJantina").value;
+  const tingkatan = document.getElementById("newStdTingkatan").value;
+  const kelas = document.getElementById("newStdKelas").value.trim();
+  const rumah = document.getElementById("newStdRumah").value;
+
+  const newStudent = {
+    id: "std_" + Date.now(),
+    no_maktab: noMaktab,
+    nama: nama,
+    tingkatan: tingkatan,
+    kelas: kelas,
+    jantina: jantina,
+    rumah_sukan: rumah,
+    uniform_id: "",
+    kelab_id: "",
+    sukan_id: "",
+    skp_id: ""
+  };
+
+  data.students.push(newStudent);
+  saveAppData(data);
+
+  if (window.DatabaseService) {
+    DatabaseService.postAction("saveStudent", newStudent);
+  }
+
+  closeRegisterStudentModal();
+  showToast(`Pelajar ${nama} (${noMaktab}) berjaya didaftarkan ke dalam sistem maktab!`);
+  renderApp();
+}
+
+function filterStudentDirectoryTable() {
+  const query = document.getElementById("filterStudentInput").value.toLowerCase();
+  const rows = document.querySelectorAll("#studentDirectoryTable tbody tr.student-row-item");
+  rows.forEach(r => {
+    const text = r.textContent.toLowerCase();
+    r.style.display = text.includes(query) ? "" : "none";
+  });
+}
+
+function openAssignCoordinatorModal() {
+  const data = getAppData();
+  const teachers = data.users.filter(u => u.roles[0] !== "admin");
+
+  const buildOptions = (targetRole) => {
+    return teachers.map(t => {
+      const isSelected = t.roles.includes(targetRole) || t.roles.includes(targetRole.replace("penyelaras", "penyemak"));
+      return `<option value="${t.id}" ${isSelected ? "selected" : ""}>${t.nama} (${t.no_gaji})</option>`;
+    }).join("");
+  };
+
+  const selUniform = document.getElementById("selectCoordUniform");
+  const selSukan = document.getElementById("selectCoordSukan");
+  const selKelab = document.getElementById("selectCoordKelab");
+  const selSkp = document.getElementById("selectCoordSkp");
+
+  if (selUniform) selUniform.innerHTML = buildOptions("penyelaras_uniform");
+  if (selSukan) selSukan.innerHTML = buildOptions("penyelaras_sukan");
+  if (selKelab) selKelab.innerHTML = buildOptions("penyelaras_kelab");
+  if (selSkp) selSkp.innerHTML = buildOptions("penyelaras_skp");
+
+  document.getElementById("modalAssignCoordinator").classList.add("active");
+}
+
+function closeAssignCoordinatorModal() {
+  document.getElementById("modalAssignCoordinator").classList.remove("active");
+}
+
+function saveCoordinatorsAssignment(e) {
+  e.preventDefault();
+  const data = getAppData();
+
+  const idUniform = document.getElementById("selectCoordUniform").value;
+  const idSukan = document.getElementById("selectCoordSukan").value;
+  const idKelab = document.getElementById("selectCoordKelab").value;
+  const idSkp = document.getElementById("selectCoordSkp").value;
+
+  // Bersihkan role penyelaras daripada semua guru dahulu
+  const coordRoles = ["penyelaras_uniform", "penyemak_uniform", "penyelaras_sukan", "penyemak_sukan", "penyelaras_kelab", "penyemak_kelab", "penyelaras_skp", "penyemak_skp"];
+  data.users.forEach(u => {
+    u.roles = u.roles.filter(r => !coordRoles.includes(r));
+    if (u.roles.length === 0) u.roles.push("guru");
+  });
+
+  // Berikan peranan penyelaras baharu
+  const setRole = (userId, role1, role2) => {
+    const user = data.users.find(u => u.id === userId);
+    if (user) {
+      if (!user.roles.includes("guru")) user.roles.unshift("guru");
+      if (!user.roles.includes(role1)) user.roles.push(role1);
+      if (!user.roles.includes(role2)) user.roles.push(role2);
+    }
+  };
+
+  setRole(idUniform, "penyelaras_uniform", "penyemak_uniform");
+  setRole(idSukan, "penyelaras_sukan", "penyemak_sukan");
+  setRole(idKelab, "penyelaras_kelab", "penyemak_kelab");
+  setRole(idSkp, "penyelaras_skp", "penyemak_skp");
+
+  saveAppData(data);
+
+  if (window.DatabaseService) {
+    data.users.forEach(u => {
+      DatabaseService.postAction("saveUser", {
+        id: u.id, no_gaji: u.no_gaji, nama: u.nama, roles: u.roles, units: u.units
+      });
+    });
+  }
+
+  closeAssignCoordinatorModal();
+  showToast("Pelantikan Penyelaras 4 Kategori berjaya dikemaskini!");
+  renderApp();
+}
+
+// ==========================================================================
+// 16. HANDLER PENYELARAS: CIPTA UNIT & LANTIK GURU PENASIHAT
+// ==========================================================================
+function openCoordinatorCreateUnitModal(kategori) {
+  document.getElementById("coordUnitKategoriDisplay").value = kategori;
+  document.getElementById("coordUnitKategoriVal").value = kategori;
+  document.getElementById("coordUnitNama").value = "";
+  document.getElementById("coordUnitKuota").value = 45;
+
+  const subtitle = document.getElementById("coordinatorModalSubtitle");
+  if (subtitle) subtitle.textContent = `Tindakan Penyelaras ${kategori} &bull; MRSM Kuching`;
+
+  document.getElementById("modalCoordinatorCreateUnit").classList.add("active");
+}
+
+function closeCoordinatorCreateUnitModal() {
+  document.getElementById("modalCoordinatorCreateUnit").classList.remove("active");
+}
+
+function saveCoordinatorUnit(e) {
+  e.preventDefault();
+  const data = getAppData();
+  const user = appState.currentUser;
+
+  const kategori = document.getElementById("coordUnitKategoriVal").value;
+  const nama = document.getElementById("coordUnitNama").value.trim();
+  const kuota = parseInt(document.getElementById("coordUnitKuota").value) || 45;
+
+  const newUnit = {
+    id: "unit_" + Date.now(),
+    nama: nama,
+    kategori: kategori,
+    penyelaras_id: user ? user.id : "",
+    penasihat_ids: [],
+    kuota: kuota,
+    ahli: 0
+  };
+
+  data.units.push(newUnit);
+  saveAppData(data);
+
+  if (window.DatabaseService) {
+    DatabaseService.postAction("saveUnit", newUnit);
+  }
+
+  closeCoordinatorCreateUnitModal();
+  showToast(`Unit ${nama} (${kategori}) berjaya dicipta oleh Penyelaras!`);
+  renderApp();
+}
+
+function openCoordinatorManageAdvisorsModal(kategori) {
+  const data = getAppData();
+  const unitsInCat = data.units.filter(u => u.kategori === kategori);
+  if (unitsInCat.length === 0) {
+    alert(`Tiada unit di bawah kategori ${kategori}. Sila cipta unit terlebih dahulu.`);
+    return;
+  }
+
+  // Pilih unit pertama
+  const targetUnit = unitsInCat[0];
+  openCoordinatorAssignAdvisorModal(targetUnit.id);
+}
+
+function openCoordinatorAssignAdvisorModal(unitId) {
+  const data = getAppData();
+  const unit = data.units.find(u => u.id === unitId);
+  if (!unit) return;
+
+  document.getElementById("assignAdvisorUnitId").value = unitId;
+  const subtitle = document.getElementById("advisorModalUnitName");
+  if (subtitle) subtitle.textContent = `Unit: ${unit.nama} (${unit.kategori})`;
+
+  const teachers = data.users.filter(u => u.roles[0] !== "admin");
+  const container = document.getElementById("advisorCheckboxesList");
+
+  if (container) {
+    container.innerHTML = teachers.map(t => {
+      const isChecked = (unit.penasihat_ids || []).includes(t.id);
+      return `
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.825rem; padding: 4px 0; cursor: pointer;">
+          <input type="checkbox" name="advisorTeacherCheckbox" value="${t.id}" ${isChecked ? "checked" : ""}>
+          <span><strong>${t.nama}</strong> (${t.no_gaji})</span>
+        </label>
+      `;
+    }).join("");
+  }
+
+  document.getElementById("modalCoordinatorAssignAdvisor").classList.add("active");
+}
+
+function closeCoordinatorAssignAdvisorModal() {
+  document.getElementById("modalCoordinatorAssignAdvisor").classList.remove("active");
+}
+
+function saveCoordinatorAdvisorAssignment(e) {
+  e.preventDefault();
+  const data = getAppData();
+
+  const unitId = document.getElementById("assignAdvisorUnitId").value;
+  const unit = data.units.find(u => u.id === unitId);
+  if (!unit) return;
+
+  const selectedTeachers = Array.from(document.querySelectorAll("input[name='advisorTeacherCheckbox']:checked")).map(cb => cb.value);
+  unit.penasihat_ids = selectedTeachers;
+
+  // Kemaskini unit di dalam profil guru
+  data.users.forEach(t => {
+    if (selectedTeachers.includes(t.id)) {
+      if (!t.units) t.units = [];
+      if (!t.units.includes(unitId)) t.units.push(unitId);
+    } else {
+      if (t.units) t.units = t.units.filter(uid => uid !== unitId);
+    }
+  });
+
+  saveAppData(data);
+
+  if (window.DatabaseService) {
+    DatabaseService.postAction("assignAdvisor", {
+      unitId: unitId,
+      advisorIds: selectedTeachers
+    });
+  }
+
+  closeCoordinatorAssignAdvisorModal();
+  showToast(`Guru penasihat berjaya dilantik bagi ${unit.nama}!`);
+  renderApp();
+}
+
+// ==========================================================================
+// 17. HANDLER GURU PENASIHAT: DAFTAR AHLI PELAJAR KE UNIT
+// ==========================================================================
+let currentEnrollingUnitId = null;
+
+function openRegisterStudentToUnitModal(unitId) {
+  currentEnrollingUnitId = unitId;
+  const data = getAppData();
+  const unit = data.units.find(u => u.id === unitId);
+  if (!unit) return;
+
+  const subtitle = document.getElementById("unitEnrollModalSubtitle");
+  if (subtitle) {
+    subtitle.textContent = `Unit: ${unit.nama} (${unit.kategori}) &bull; Kuota: ${unit.ahli || 0}/${unit.kuota}`;
+  }
+
+  renderStudentEnrollList();
+  document.getElementById("modalRegisterStudentToUnit").classList.add("active");
+}
+
+function closeRegisterStudentToUnitModal() {
+  document.getElementById("modalRegisterStudentToUnit").classList.remove("active");
+  currentEnrollingUnitId = null;
+  renderApp();
+}
+
+function renderStudentEnrollList() {
+  const data = getAppData();
+  const unit = data.units.find(u => u.id === currentEnrollingUnitId);
+  const container = document.getElementById("studentEnrollListContainer");
+  if (!unit || !container) return;
+
+  const students = data.students || [];
+
+  container.innerHTML = students.map(s => {
+    let isEnrolled = false;
+    let field = "";
+    if (unit.kategori === "Badan Beruniform") {
+      isEnrolled = s.uniform_id === unit.id;
+      field = "uniform_id";
+    } else if (unit.kategori === "Kelab & Persatuan") {
+      isEnrolled = s.kelab_id === unit.id;
+      field = "kelab_id";
+    } else if (unit.kategori === "Sukan & Permainan") {
+      isEnrolled = s.sukan_id === unit.id;
+      field = "sukan_id";
+    } else if (unit.kategori === "SKP") {
+      isEnrolled = s.skp_id === unit.id;
+      field = "skp_id";
+    }
+
+    const currentUnitInCat = s[field];
+    const hasOtherUnit = currentUnitInCat && currentUnitInCat !== unit.id;
+    const otherUnit = hasOtherUnit ? data.units.find(u => u.id === currentUnitInCat) : null;
+
+    return `
+      <div class="student-enroll-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid #f1f5f9; gap: 10px;">
+        <div style="flex: 1;">
+          <div style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">${s.nama}</div>
+          <div style="font-size: 0.725rem; color: var(--text-muted);">
+            <code>${s.no_maktab}</code> &bull; ${s.tingkatan} (${s.kelas}) &bull; Rumah ${s.rumah_sukan}
+          </div>
+          ${hasOtherUnit ? `<div style="font-size: 0.7rem; color: #b45309; margin-top: 2px;">⚠️ Sudah ada: ${otherUnit ? otherUnit.nama : currentUnitInCat}</div>` : ''}
+        </div>
+        <div>
+          ${isEnrolled ? `
+            <button class="btn-clay btn-clay-sm btn-clay-danger" onclick="toggleStudentEnrollment('${s.id}', '${unit.id}', false)">
+              ❌ Batalkan Keahlian
+            </button>
+          ` : `
+            <button class="btn-clay btn-clay-sm btn-clay-primary" onclick="toggleStudentEnrollment('${s.id}', '${unit.id}', true)">
+              ➕ Daftar ke Unit Ini
+            </button>
+          `}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function filterStudentEnrollList() {
+  const query = document.getElementById("searchStudentEnrollInput").value.toLowerCase();
+  document.querySelectorAll(".student-enroll-item").forEach(item => {
+    const text = item.textContent.toLowerCase();
+    item.style.display = text.includes(query) ? "flex" : "none";
+  });
+}
+
+function toggleStudentEnrollment(studentId, unitId, isAdding) {
+  const data = getAppData();
+  const unit = data.units.find(u => u.id === unitId);
+  const student = data.students.find(s => s.id === studentId);
+  if (!unit || !student) return;
+
+  let field = "";
+  if (unit.kategori === "Badan Beruniform") field = "uniform_id";
+  else if (unit.kategori === "Kelab & Persatuan") field = "kelab_id";
+  else if (unit.kategori === "Sukan & Permainan") field = "sukan_id";
+  else if (unit.kategori === "SKP") field = "skp_id";
+
+  if (isAdding) {
+    student[field] = unitId;
+  } else {
+    student[field] = "";
+  }
+
+  // Recalculate member count
+  unit.ahli = data.students.filter(s => s[field] === unitId).length;
+  saveAppData(data);
+
+  if (window.DatabaseService) {
+    DatabaseService.postAction("assignStudentToUnit", {
+      studentId: studentId,
+      unitId: isAdding ? unitId : "",
+      kategori: unit.kategori
+    });
+  }
+
+  showToast(`${student.nama} ${isAdding ? 'berjaya didaftarkan ke' : 'dikeluarkan daripada'} ${unit.nama}!`);
+  renderStudentEnrollList();
+
+  const subtitle = document.getElementById("unitEnrollModalSubtitle");
+  if (subtitle) {
+    subtitle.textContent = `Unit: ${unit.nama} (${unit.kategori}) &bull; Kuota: ${unit.ahli}/${unit.kuota}`;
+  }
+}
+
 

@@ -83,6 +83,12 @@
           <span id="pelaporanBadgeCount" class="clay-nav-badge" style="display: none;">0</span>
         </button>
 
+        <button class="clay-nav-btn" data-tab="pelajar">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          Direktori Pelajar & Koko
+          <span id="pelajarStatusBadgeCount" class="clay-nav-badge" style="display: inline-block; background: #f59e0b;">3/3</span>
+        </button>
+
         <button class="clay-nav-btn" data-tab="maklumat">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
           Maklumat Umum
@@ -646,6 +652,280 @@
           <button type="button" class="btn-clay btn-clay-secondary" onclick="closeDatabaseSetupModal()">Batal</button>
           <button type="button" class="btn-clay btn-clay-danger btn-clay-sm" onclick="handleDisconnectDb()">Putuskan</button>
           <button type="submit" class="btn-clay btn-clay-primary">💾 Simpan Sambungan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 7: DAFTAR PELAJAR BARU MAKTAB (ADMIN)
+       ===================================================================== -->
+  <div id="modalRegisterStudent" class="modal-overlay">
+    <div class="modal-clay-content">
+      <div class="modal-header">
+        <div>
+          <h2>🎓 Daftar Pelajar Baru MRSM Kuching</h2>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Tindakan Pentadbir &bull; Pendaftaran Rekod Induk Pelajar Maktab</p>
+        </div>
+        <button class="btn-close-modal" onclick="closeRegisterStudentModal()">&times;</button>
+      </div>
+
+      <form onsubmit="saveNewStudent(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="newStdNoMaktab">Nombor Maktab (ID Pelajar) *</label>
+            <input type="text" id="newStdNoMaktab" class="clay-input" placeholder="Cth: MK24015" required>
+          </div>
+          <div class="form-group">
+            <label for="newStdJantina">Jantina *</label>
+            <select id="newStdJantina" class="clay-select" required>
+              <option value="Lelaki">Lelaki</option>
+              <option value="Perempuan">Perempuan</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="newStdNama">Nama Penuh Pelajar *</label>
+          <input type="text" id="newStdNama" class="clay-input" placeholder="Nama mengikut kad pengenalan" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="newStdTingkatan">Tingkatan *</label>
+            <select id="newStdTingkatan" class="clay-select" required>
+              <option value="Tingkatan 1">Tingkatan 1</option>
+              <option value="Tingkatan 2">Tingkatan 2</option>
+              <option value="Tingkatan 3">Tingkatan 3</option>
+              <option value="Tingkatan 4">Tingkatan 4</option>
+              <option value="Tingkatan 5">Tingkatan 5</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="newStdKelas">Nama Kelas *</label>
+            <input type="text" id="newStdKelas" class="clay-input" placeholder="Cth: 4 Al-Farabi / 1 Bestari" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="newStdRumah">Rumah Sukan MRSM *</label>
+          <select id="newStdRumah" class="clay-select" required>
+            <option value="Bendahara">Bendahara (Kuning)</option>
+            <option value="Temenggung">Temenggung (Merah)</option>
+            <option value="Laksamana">Laksamana (Biru)</option>
+            <option value="Syahbandar">Syahbandar (Hijau)</option>
+          </select>
+        </div>
+
+        <div style="background: #eff6ff; border-radius: var(--radius-sm); padding: 10px 12px; font-size: 0.775rem; color: #1e40af; margin-bottom: 16px;">
+          ℹ️ <em>Nota: Pendaftaran kokurikulum (Badan Beruniform, Kelab, Sukan & SKP) akan didaftarkan oleh Guru Penasihat unit masing-masing.</em>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+          <button type="button" class="btn-clay btn-clay-secondary" onclick="closeRegisterStudentModal()">Batal</button>
+          <button type="submit" class="btn-clay btn-clay-primary">💾 Simpan Rekod Pelajar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 8: LANTIK / TETAPKAN PENYELARAS (ADMIN)
+       ===================================================================== -->
+  <div id="modalAssignCoordinator" class="modal-overlay">
+    <div class="modal-clay-content">
+      <div class="modal-header">
+        <div>
+          <h2>👑 Lantik Penyelaras Kokurikulum Maktab</h2>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Tindakan Pentadbir &bull; Tetapkan Guru bagi 4 Kategori Penyelaras</p>
+        </div>
+        <button class="btn-close-modal" onclick="closeAssignCoordinatorModal()">&times;</button>
+      </div>
+
+      <form onsubmit="saveCoordinatorsAssignment(event)">
+        <div class="form-group">
+          <label for="selectCoordUniform">🎖️ Penyelaras Badan Beruniform *</label>
+          <select id="selectCoordUniform" class="clay-select" required></select>
+          <small style="font-size: 0.725rem; color: var(--text-muted);">Bertanggungjawab mencipta badan beruniform & melantik guru penasihat uniform.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="selectCoordSukan">⚽ Penyelaras Sukan & Permainan *</label>
+          <select id="selectCoordSukan" class="clay-select" required></select>
+          <small style="font-size: 0.725rem; color: var(--text-muted);">Bertanggungjawab mencipta sukan/permainan & melantik guru penasihat sukan.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="selectCoordKelab">🎭 Penyelaras Kelab & Persatuan *</label>
+          <select id="selectCoordKelab" class="clay-select" required></select>
+          <small style="font-size: 0.725rem; color: var(--text-muted);">Bertanggungjawab mencipta kelab & melantik guru penasihat kelab.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="selectCoordSkp">⭐ Penyelaras Sekretariat Kepimpinan Pelajar (SKP) *</label>
+          <select id="selectCoordSkp" class="clay-select" required></select>
+          <small style="font-size: 0.725rem; color: var(--text-muted);">Bertanggungjawab mencipta unit SKP (BWP, LDP, PRS, Asrama) & melantik penasihat SKP.</small>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+          <button type="button" class="btn-clay btn-clay-secondary" onclick="closeAssignCoordinatorModal()">Batal</button>
+          <button type="submit" class="btn-clay btn-clay-primary">💾 Kemaskini Penyelaras</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 9: CIPTA UNIT OLEH PENYELARAS KATEGORI
+       ===================================================================== -->
+  <div id="modalCoordinatorCreateUnit" class="modal-overlay">
+    <div class="modal-clay-content">
+      <div class="modal-header">
+        <div>
+          <h2>➕ Cipta Unit Kokurikulum Baru</h2>
+          <p id="coordinatorModalSubtitle" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Bidang Kuasa Penyelaras Kategori</p>
+        </div>
+        <button class="btn-close-modal" onclick="closeCoordinatorCreateUnitModal()">&times;</button>
+      </div>
+
+      <form onsubmit="saveCoordinatorUnit(event)">
+        <div class="form-group">
+          <label>Kategori Kokurikulum</label>
+          <input type="text" id="coordUnitKategoriDisplay" class="clay-input" readonly style="background: #f1f5f9; font-weight: 700;">
+          <input type="hidden" id="coordUnitKategoriVal">
+        </div>
+
+        <div class="form-group">
+          <label for="coordUnitNama">Nama Unit Baharu *</label>
+          <input type="text" id="coordUnitNama" class="clay-input" placeholder="Cth: Kadet Bomba / Kelab Futsal / BWP" required>
+        </div>
+
+        <div class="form-group">
+          <label for="coordUnitKuota">Kuota Ahli Pelajar Maksimum</label>
+          <input type="number" id="coordUnitKuota" class="clay-input" value="45" min="10" max="150" required>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+          <button type="button" class="btn-clay btn-clay-secondary" onclick="closeCoordinatorCreateUnitModal()">Batal</button>
+          <button type="submit" class="btn-clay btn-clay-primary">💾 Cipta Unit Ini</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 10: LANTIK GURU PENASIHAT OLEH PENYELARAS
+       ===================================================================== -->
+  <div id="modalCoordinatorAssignAdvisor" class="modal-overlay">
+    <div class="modal-clay-content">
+      <div class="modal-header">
+        <div>
+          <h2>👥 Lantik Guru Penasihat Unit</h2>
+          <p id="advisorModalUnitName" style="font-size: 0.8rem; color: var(--primary); font-weight: 700; margin-top: 2px;">Unit: -</p>
+        </div>
+        <button class="btn-close-modal" onclick="closeCoordinatorAssignAdvisorModal()">&times;</button>
+      </div>
+
+      <form onsubmit="saveCoordinatorAdvisorAssignment(event)">
+        <input type="hidden" id="assignAdvisorUnitId">
+        <div class="form-group">
+          <label>Pilih Guru Penasihat daripada Senarai Maktab:</label>
+          <div id="advisorCheckboxesList" style="max-height: 220px; overflow-y: auto; background: #f8fafc; padding: 10px; border-radius: var(--radius-sm); border: 1px solid #cbd5e1;">
+            <!-- Rendered by JS -->
+          </div>
+          <small style="color: var(--text-muted); font-size: 0.725rem; display: block; margin-top: 4px;">Seorang guru boleh membimbing lebih daripada satu unit.</small>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+          <button type="button" class="btn-clay btn-clay-secondary" onclick="closeCoordinatorAssignAdvisorModal()">Batal</button>
+          <button type="submit" class="btn-clay btn-clay-primary">💾 Lantik Penasihat</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 11: DAFTAR AHLI PELAJAR KE UNIT (GURU PENASIHAT)
+       ===================================================================== -->
+  <div id="modalRegisterStudentToUnit" class="modal-overlay">
+    <div class="modal-clay-content" style="max-width: 650px;">
+      <div class="modal-header">
+        <div>
+          <h2>👥 Daftar Ahli Pelajar ke Unit</h2>
+          <p id="unitEnrollModalSubtitle" style="font-size: 0.8rem; color: var(--primary); font-weight: 700; margin-top: 2px;">Unit: -</p>
+        </div>
+        <button class="btn-close-modal" onclick="closeRegisterStudentToUnitModal()">&times;</button>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <input type="text" id="searchStudentEnrollInput" class="clay-input" placeholder="🔍 Cari nama pelajar, no maktab, atau tingkatan..." onkeyup="filterStudentEnrollList()">
+      </div>
+
+      <div id="studentEnrollListContainer" style="max-height: 320px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); background: #ffffff;">
+        <!-- Rendered by JS -->
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; border-top: 1px solid #f1f5f9; padding-top: 12px;">
+        <span style="font-size: 0.775rem; color: var(--text-muted);">Syarat: 1 Uniform + 1 Kelab + 1 Sukan (SKP: Terpilih)</span>
+        <button type="button" class="btn-clay btn-clay-secondary" onclick="closeRegisterStudentToUnitModal()">Selesai / Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 12: EDIT / KEY-IN BARIS RPT (GURU PENASIHAT)
+       ===================================================================== -->
+  <div id="modalEditRptRow" class="modal-overlay">
+    <div class="modal-clay-content">
+      <div class="modal-header">
+        <div>
+          <h2>✏️ Key-In Rancangan Tahunan (RPT)</h2>
+          <p id="rptModalSubtitle" style="font-size: 0.8rem; color: var(--primary); font-weight: 700; margin-top: 2px;">Format Standard MRSM Kuching</p>
+        </div>
+        <button class="btn-close-modal" onclick="closeEditRptRowModal()">&times;</button>
+      </div>
+
+      <form onsubmit="saveRptRowData(event)">
+        <input type="hidden" id="rptEditRowId">
+        <input type="hidden" id="rptEditUnitId">
+
+        <div class="form-row">
+          <div class="form-group" style="flex: 1;">
+            <label for="rptEditBil">1. Bil. *</label>
+            <input type="number" id="rptEditBil" class="clay-input" required readonly style="background: #f8fafc;">
+          </div>
+          <div class="form-group" style="flex: 2;">
+            <label for="rptEditMinggu">2. Minggu *</label>
+            <input type="text" id="rptEditMinggu" class="clay-input" required placeholder="Cth: Minggu 1">
+          </div>
+          <div class="form-group" style="flex: 2;">
+            <label for="rptEditTarikh">5. Tarikh Pelaksanaan *</label>
+            <input type="date" id="rptEditTarikh" class="clay-input" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="rptEditAktiviti">3. Aktiviti Kokurikulum *</label>
+          <textarea id="rptEditAktiviti" class="clay-textarea" rows="3" placeholder="Nyatakan aktiviti ringkas yang akan dijalankan..." required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="rptEditObjektif">4. Objektif *</label>
+          <textarea id="rptEditObjektif" class="clay-textarea" rows="2" placeholder="Objektif pembelajaran / kemahiran yang disasarkan..." required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="rptEditStatus">Status Pelaksanaan</label>
+          <select id="rptEditStatus" class="clay-select">
+            <option value="Dalam Perancangan">Dalam Perancangan</option>
+            <option value="Selesai">Selesai</option>
+            <option value="Ditangguhkan">Ditangguhkan</option>
+          </select>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+          <button type="button" class="btn-clay btn-clay-secondary" onclick="closeEditRptRowModal()">Batal</button>
+          <button type="submit" class="btn-clay btn-clay-primary">💾 Simpan RPT</button>
         </div>
       </form>
     </div>
